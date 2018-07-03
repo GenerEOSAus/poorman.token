@@ -4,7 +4,7 @@ EOS Token Contract with "Burning" and "Signup" built in (for making the token RA
 This token uses the standard eosio.token contract with two modifications.
 
 ### To signup for an airdrop:
-`cleos push action gen.token signup '{"owner":"tokensowner1","quantity":"0.0000 TOKEN"}' -p tokensowner1@active`
+`cleos push action gen.token signup '{"owner":"iwanttokens1","quantity":"0.0000 TOKEN"}' -p iwanttokens1@active`
 
 The signup function allows an account to create a balance entry using their own personal ram.
 
