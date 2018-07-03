@@ -6,6 +6,7 @@ This token uses the standard eosio.token contract with two modifications.
 ## The poorman.token test is available on the mainnet
 
 Everyone feel free to signup for the "Free airdrop test" of the poormantoken
+
 You can go this at https://eostoolkit.io/airgrab
 
 ### To signup for an airdrop:
