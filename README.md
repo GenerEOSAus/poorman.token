@@ -3,9 +3,10 @@ EOS Token Contract with "Burning" and "Signup" built in (for making the token RA
 
 This token uses the standard eosio.token contract with two modifications.
 
-## The poorman.token test is available on the mainnet by interacting with poormantoken
+## The poorman.token test is available on the mainnet
 
 Everyone feel free to signup for the "Free airdrop test" of the poormantoken
+You can go this at https://eostoolkit.io/airgrab
 
 ### To signup for an airdrop:
 `cleos push action poormantoken signup '{"owner":"iwanttokens1","quantity":"0.0000 POOR"}' -p iwanttokens1@active`
