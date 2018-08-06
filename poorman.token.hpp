@@ -25,16 +25,13 @@ namespace eosio {
                       asset        maximum_supply);
 
          void issue( account_name to, asset quantity, string memo );
+         void issuefree( account_name to, asset quantity, string memo );
          void burn( account_name from, asset quantity, string memo );
          void signup( account_name owner, asset quantity);
-         void transfer( account_name from,
-                        account_name to,
-                        asset        quantity,
-                        string       memo );
-
+         void transfer( account_name from, account_name to, asset quantity, string memo );
+         void transferfree( account_name from, account_name to, asset quantity, string memo );
 
          inline asset get_supply( symbol_name sym )const;
-
          inline asset get_balance( account_name owner, symbol_name sym )const;
 
       private:
@@ -55,8 +52,11 @@ namespace eosio {
          typedef eosio::multi_index<N(accounts), account> accounts;
          typedef eosio::multi_index<N(stat), currency_stats> stats;
 
+         void do_issue( account_name to, asset quantity, string memom, bool pay_ram = true );
+         void do_transfer( account_name from, account_name to, asset quantity, string memo, bool pay_ram = true );
+
          void sub_balance( account_name owner, asset value );
-         void add_balance( account_name owner, asset value, account_name ram_payer );
+         void add_balance( account_name owner, asset value, account_name ram_payer, bool pay_ram = true );
 
       public:
          struct transfer_args {
