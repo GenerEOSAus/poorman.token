@@ -14,7 +14,7 @@ You can go this at https://eostoolkit.io/airgrab
 
 The signup function allows an account to create a balance entry using their own personal ram.
 
-They signup restricts the quantity to 0 however you could configure this in the contract code to allow a "signup bonus".
+The signup restricts the quantity to 0 however you could configure this in the contract code to allow a "signup bonus".
 
 You would have to add some controls to prevent double signups though, so 0 quantity signup is safest.
 
