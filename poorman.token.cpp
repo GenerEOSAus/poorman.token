@@ -12,15 +12,15 @@ namespace genereos {
         require_auth( _self );
 
         auto sym = maximum_supply.symbol;
-        check( sym.is_valid(),            "Invalid SYMBOL name"             );  
-        check( maximum_supply.is_valid(), "Invalid SUPPLY"                  ); 
-        check( maximum_supply.amount > 0, "Maximum SUPPLY must be positive" );    
+        check( sym.is_valid(),            "Invalid symbol name"             );  
+        check( maximum_supply.is_valid(), "Invalid supply"                  ); 
+        check( maximum_supply.amount > 0, "Maximum supply must be positive" );    
         
         auto sym_code_raw = sym.code().raw();
 
         stats statstable( _self, sym_code_raw );
         auto existing = statstable.find( sym_code_raw );
-        check( existing == statstable.end(), "Token with that SYMBOL name exists!" );
+        check( existing == statstable.end(), "Token with that symbol name exists" );
 
         statstable.emplace( _self, [&]( auto& s ) 
         {
@@ -43,24 +43,24 @@ namespace genereos {
     void token::burn( name from, asset quantity, string memo )
     {
         auto sym = quantity.symbol;
-        check( sym.is_valid(),     "Invalid SYMBOL Name"                   );
+        check( sym.is_valid(),     "Invalid symbol name"                   );
         check( memo.size() <= 256, "Memo must be less than 256 characters" );
 
         auto sym_code_raw = sym.code().raw();
 
         stats statstable( _self, sym_code_raw );
         auto existing = statstable.find( sym_code_raw );
-        check( existing != statstable.end(), "Token with that SYMBOL name does not exist - Please create the Token before burning!" );
+        check( existing != statstable.end(), "Token with that symbol name does not exist - Please create the token before burning" );
 
         const auto& st = *existing;
 
         require_auth( from );
         require_recipient( from );
-        check( quantity.is_valid(), "Invalid QUANTITY Value" );
-        check( quantity.amount > 0, "QUANTITY Value must be positive" );
+        check( quantity.is_valid(), "Invalid quantity value" );
+        check( quantity.amount > 0, "Quantity value must be positive" );
 
-        check( st.supply.symbol == quantity.symbol, "SYMBOL precision mismatch" );
-        check( st.supply.amount >= quantity.amount, "QUANTITY Value cannot exceed the available SUPPLY" );
+        check( st.supply.symbol == quantity.symbol, "Symbol precision mismatch" );
+        check( st.supply.amount >= quantity.amount, "Quantity value cannot exceed the available supply" );
 
         statstable.modify( st, same_payer, [&]( auto& s ) 
         {
@@ -73,13 +73,13 @@ namespace genereos {
     void token::signup( name owner, asset quantity )
     {
         auto sym = quantity.symbol;
-        check( sym.is_valid(), "Invalid SYMBOL Name" );
+        check( sym.is_valid(), "Invalid symbol name" );
 
         auto sym_code_raw = sym.code().raw();
 
         stats statstable( _self, sym_code_raw );
         auto existing = statstable.find( sym_code_raw );
-        check( existing != statstable.end(), "Token with that SYMBOL name does not exist - Please create the Token before issuing!" );
+        check( existing != statstable.end(), "Token with that symbol name does not exist - Please create the token before issuing" );
 
         const auto& st = *existing;
 
@@ -88,12 +88,12 @@ namespace genereos {
 
         accounts to_acnts( _self, owner.value );
         auto to = to_acnts.find( sym_code_raw );
-        check( to == to_acnts.end(), "You Have Signed Up!" );
+        check( to == to_acnts.end(), "You have already signed up" );
 
-        check( quantity.is_valid(), "Invalid QUANTITY Value" );
-        check( quantity.amount == 0, "QUANTITY exceeds Signup Allowance" );
-        check( st.supply.symbol == quantity.symbol, "SYMBOL precision mismatch" );
-        check( st.max_supply.amount - st.supply.amount >= quantity.amount, "QUANTITY Value cannot exceed the available SUPPLY" );
+        check( quantity.is_valid(), "Invalid quantity value" );
+        check( quantity.amount == 0, "Quantity exceeds signup allowance" );
+        check( st.supply.symbol == quantity.symbol, "Symbol precision mismatch" );
+        check( st.max_supply.amount - st.supply.amount >= quantity.amount, "Quantity value cannot exceed the available supply" );
 
         statstable.modify( st, same_payer, [&]( auto& s ) {
             s.supply += quantity;
@@ -115,23 +115,23 @@ namespace genereos {
     void token::do_issue( name to, asset quantity, string memo, bool pay_ram )
     {
         auto sym = quantity.symbol;
-        check( sym.is_valid(),     "Invalid SYMBOL Name"                   );
+        check( sym.is_valid(),     "Invalid symbol name"                   );
         check( memo.size() <= 256, "Memo must be less than 256 characters" );
  
         auto sym_code_raw = sym.code().raw();
 
         stats statstable( _self, sym_code_raw );
         auto existing = statstable.find( sym_code_raw );
-        check( existing != statstable.end(), "Token with that SYMBOL name does not exist - Please create the Token before issuing!" );
+        check( existing != statstable.end(), "Token with that symbol name does not exist - Please create the token before issuing" );
 
         const auto& st = *existing;
 
         require_auth( st.issuer );
-        check( quantity.is_valid(), "Invalid QUANTITY Value" );
-        check( quantity.amount > 0, "QUANTITY Value must be positive" );
+        check( quantity.is_valid(), "Invalid quantity value" );
+        check( quantity.amount > 0, "Quantity value must be positive" );
 
-        check( st.supply.symbol == quantity.symbol, "SYMBOL precision mismatch" );
-        check( st.max_supply.amount - st.supply.amount >= quantity.amount, "QUANTITY Value cannot exceed the available SUPPLY" );
+        check( st.supply.symbol == quantity.symbol, "Symbol precision mismatch" );
+        check( st.max_supply.amount - st.supply.amount >= quantity.amount, "Quantity value cannot exceed the available supply" );
 
         statstable.modify( st, same_payer, [&]( auto& s ) 
         {
@@ -153,21 +153,21 @@ namespace genereos {
     {
         require_auth( from );
 
-        check( from != to,       "Cannot transfer to self!"   );
-        check( is_account( to ), "to Account does not exist!" );
+        check( from != to,       "Cannot transfer to self"   );
+        check( is_account( to ), "to Account does not exist" );
 
         auto sym = quantity.symbol;
 
         stats statstable( _self, sym.code().raw() );
-        const auto& st = statstable.get( sym.code().raw(), "Token with that SYMBOL name does not exist - Please create the Token before transferring!" );        
+        const auto& st = statstable.get( sym.code().raw(), "Token with that symbol name does not exist - Please create the token before transferring" );        
 
         require_recipient( from );
         require_recipient( to );
 
-        check( quantity.is_valid(), "Invalid QUANTITY Value"          );
-        check( quantity.amount > 0, "QUANTITY Value must be positive" );
+        check( quantity.is_valid(), "Invalid quantity value"          );
+        check( quantity.amount > 0, "Quantity value must be positive" );
 
-        check( st.supply.symbol == quantity.symbol, "SYMBOL precision mismatch"             );
+        check( st.supply.symbol == quantity.symbol, "Symbol precision mismatch"             );
         check( memo.size() <= 256,                  "Memo must be less than 256 characters" );
 
         sub_balance( from, quantity );
@@ -181,8 +181,8 @@ namespace genereos {
         auto sym_code_raw = symbol.code().raw();
 
         stats statstable( _self, sym_code_raw );
-        const auto& st = statstable.get( sym_code_raw, "SYMBOL does not exist" );
-        check( st.supply.symbol == symbol, "SYMBOL precision mismatch" );
+        const auto& st = statstable.get( sym_code_raw, "Symbol does not exist" );
+        check( st.supply.symbol == symbol, "Symbol precision mismatch" );
 
         accounts acnts( _self, owner.value );
         auto it = acnts.find( sym_code_raw );
@@ -200,8 +200,8 @@ namespace genereos {
         accounts acnts( _self, owner.value );
 
         auto it = acnts.find( symbol.code().raw() );
-        check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
-        check( it->balance.amount == 0, "Cannot close because the balance is not zero." );
+        check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect" );
+        check( it->balance.amount == 0, "Cannot close because the balance is not zero" );
 
         acnts.erase( it );
     }
@@ -211,7 +211,7 @@ namespace genereos {
         accounts from_acnts( _self, owner.value );
         auto sym  = value.symbol;
         auto from = from_acnts.find( sym.code().raw() );
-        check( from != from_acnts.end(), "No balance object found under the Token Balance Owner's account" );
+        check( from != from_acnts.end(), "No balance object found under the token balance owner's account" );
 
         const auto& from_iter = *from;
         check( from_iter.balance.amount >= value.amount, "Overdrawn balance will result in a nonexistent negative balance of the account" );
