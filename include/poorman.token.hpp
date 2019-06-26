@@ -27,14 +27,14 @@ namespace genereos {
             ACTION create( name  issuer,
                            asset maximum_supply );
 
-            ACTION issue(        name to, asset quantity, string memo );
-            ACTION issuefree(    name to, asset quantity, string memo );
-            ACTION burn(         name from, asset quantity, string memo );
-            ACTION signup(       name owner, asset quantity );
-            ACTION transfer(     name from, name to, asset quantity, string memo );
-            ACTION transferfree( name from, name to, asset quantity, string memo );
+            ACTION issue(        name to, asset quantity, string memo             );
+            ACTION issuefree(    name to, asset quantity, string memo             );
+            ACTION burn(         name from, asset quantity, string memo           );
+            ACTION signup(       name owner, asset quantity                       );
+            ACTION transfer(     name from, name to, asset quantity, string memo  );
+            ACTION transferfree( name from, name to, asset quantity, string memo  );
             ACTION open(         name owner, const symbol& symbol, name ram_payer );
-            ACTION close(        name owner, const symbol& symbol );
+            ACTION close(        name owner, const symbol& symbol                 );
 
             inline asset get_supply(  symbol_code sym )const;
             inline asset get_balance( name owner, symbol_code sym )const;
