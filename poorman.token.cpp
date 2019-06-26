@@ -32,12 +32,12 @@ namespace genereos {
 
     void token::issue( name to, asset quantity, string memo )
     {
-        do_issue(to,quantity,memo,true);
+        do_issue( to, quantity, memo, true );
     }
 
     void token::issuefree( name to, asset quantity, string memo )
     {
-        do_issue(to,quantity,memo,false);
+        do_issue( to, quantity, memo, false );
     }
 
     void token::burn( name from, asset quantity, string memo )
@@ -104,12 +104,12 @@ namespace genereos {
 
     void token::transfer( name from, name to, asset quantity, string memo )
     {
-    do_transfer(from,to,quantity,memo,true);
+    do_transfer( from, to, quantity, memo, true );
     }
 
     void token::transferfree( name from, name to, asset quantity, string memo )
     {
-    do_transfer(from,to,quantity,memo,false);
+    do_transfer( from, to, quantity, memo, false );
     }
 
     void token::do_issue( name to, asset quantity, string memo, bool pay_ram )
@@ -188,7 +188,7 @@ namespace genereos {
         auto it = acnts.find( sym_code_raw );
 
         if ( it == acnts.end() ) {
-            acnts.emplace(ram_payer, [&]( auto& a ) {
+            acnts.emplace( ram_payer, [&]( auto& a ) {
                 a.balance = asset{0, symbol};
             });
         } 
