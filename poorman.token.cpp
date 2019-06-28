@@ -174,38 +174,6 @@ namespace genereos {
         add_balance( to, quantity, from, pay_ram );
     }
 
-    void token::open( name owner, const symbol& symbol, name ram_payer )
-    {
-        require_auth( ram_payer );
-
-        auto sym_code_raw = symbol.code().raw();
-
-        stats statstable( _self, sym_code_raw );
-        const auto& st = statstable.get( sym_code_raw, "Symbol does not exist" );
-        check( st.supply.symbol == symbol, "Symbol precision mismatch" );
-
-        accounts acnts( _self, owner.value );
-        auto it = acnts.find( sym_code_raw );
-
-        if ( it == acnts.end() ) {
-            acnts.emplace( ram_payer, [&]( auto& a ) {
-                a.balance = asset{0, symbol};
-            });
-        } 
-    }
-
-    void token::close( name owner, const symbol& symbol )
-    {
-        require_auth( owner );
-        accounts acnts( _self, owner.value );
-
-        auto it = acnts.find( symbol.code().raw() );
-        check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect" );
-        check( it->balance.amount == 0, "Cannot close because the balance is not zero" );
-
-        acnts.erase( it );
-    }
-
     void token::sub_balance( name owner, asset value ) 
     {
         accounts from_acnts( _self, owner.value );
@@ -247,4 +215,4 @@ namespace genereos {
 
 } // namespace genereos
 
-EOSIO_DISPATCH( genereos::token, (create)(issue)(issuefree)(burn)(signup)(transfer)(transferfree)(open)(close) )
+EOSIO_DISPATCH( genereos::token, (create)(issue)(issuefree)(burn)(signup)(transfer)(transferfree) )

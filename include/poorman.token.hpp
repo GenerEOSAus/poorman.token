@@ -33,8 +33,6 @@ namespace genereos {
             ACTION signup(       name owner, asset quantity                       );
             ACTION transfer(     name from, name to, asset quantity, string memo  );
             ACTION transferfree( name from, name to, asset quantity, string memo  );
-            ACTION open(         name owner, const symbol& symbol, name ram_payer );
-            ACTION close(        name owner, const symbol& symbol                 );
 
             inline asset get_supply(  symbol_code sym )const;
             inline asset get_balance( name owner, symbol_code sym )const;
