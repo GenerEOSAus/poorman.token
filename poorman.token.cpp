@@ -3,197 +3,216 @@
  *  @copyright defined in eos/LICENSE.txt
  */
 
-#include "poorman.token.hpp"
+#include "include/poorman.token.hpp"
 
-namespace eosio {
+namespace genereos {
 
-void token::create( account_name issuer,
-                    asset        maximum_supply )
-{
-    require_auth( _self );
+    void token::create( name issuer, asset maximum_supply ) 
+    {
+        require_auth( _self );
 
-    auto sym = maximum_supply.symbol;
-    eosio_assert( sym.is_valid(), "invalid symbol name" );
-    eosio_assert( maximum_supply.is_valid(), "invalid supply");
-    eosio_assert( maximum_supply.amount > 0, "max-supply must be positive");
+        auto sym = maximum_supply.symbol;
+        check( sym.is_valid(),            "Invalid symbol name"             );  
+        check( maximum_supply.is_valid(), "Invalid supply"                  ); 
+        check( maximum_supply.amount > 0, "Maximum supply must be positive" );    
+        
+        auto sym_code_raw = sym.code().raw();
 
-    stats statstable( _self, sym.name() );
-    auto existing = statstable.find( sym.name() );
-    eosio_assert( existing == statstable.end(), "token with symbol already exists" );
+        stats statstable( _self, sym_code_raw );
+        auto existing = statstable.find( sym_code_raw );
+        check( existing == statstable.end(), "Token with that symbol name exists" );
 
-    statstable.emplace( _self, [&]( auto& s ) {
-       s.supply.symbol = maximum_supply.symbol;
-       s.max_supply    = maximum_supply;
-       s.issuer        = issuer;
-    });
-}
-
-
-void token::issue( account_name to, asset quantity, string memo )
-{
-    do_issue(to,quantity,memo,true);
-}
-
-void token::issuefree( account_name to, asset quantity, string memo )
-{
-    do_issue(to,quantity,memo,false);
-}
-
-void token::burn( account_name from, asset quantity, string memo )
-{
-    auto sym = quantity.symbol;
-    eosio_assert( sym.is_valid(), "invalid symbol name" );
-    eosio_assert( memo.size() <= 256, "memo has more than 256 bytes" );
-
-    auto sym_name = sym.name();
-    stats statstable( _self, sym_name );
-    auto existing = statstable.find( sym_name );
-    eosio_assert( existing != statstable.end(), "token with symbol does not exist, create token before burn" );
-    const auto& st = *existing;
-
-    require_auth( from );
-    require_recipient( from );
-    eosio_assert( quantity.is_valid(), "invalid quantity" );
-    eosio_assert( quantity.amount >= 0, "must burn positive or zero quantity" );
-
-    eosio_assert( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-    eosio_assert( quantity.amount <= st.supply.amount, "quantity exceeds available supply");
-
-    statstable.modify( st, 0, [&]( auto& s ) {
-       s.supply -= quantity;
-    });
-
-    sub_balance( from, quantity );
-}
-
-void token::signup( account_name owner, asset quantity)
-{
-    auto sym = quantity.symbol;
-    eosio_assert( sym.is_valid(), "invalid symbol name" );
-
-    auto sym_name = sym.name();
-    stats statstable( _self, sym_name );
-    auto existing = statstable.find( sym_name );
-    eosio_assert( existing != statstable.end(), "token with symbol does not exist, create token before signup" );
-    const auto& st = *existing;
-
-    require_auth( owner );
-    require_recipient( owner );
-
-    accounts to_acnts( _self, owner );
-    auto to = to_acnts.find( sym_name );
-    eosio_assert( to == to_acnts.end() , "you have already signed up" );
-
-    eosio_assert( quantity.is_valid(), "invalid quantity" );
-    eosio_assert( quantity.amount == 0, "quantity exceeds signup allowance" );
-    eosio_assert( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-    eosio_assert( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
-
-    statstable.modify( st, 0, [&]( auto& s ) {
-       s.supply += quantity;
-    });
-
-    add_balance( owner, quantity, owner );
-}
-
-void token::transfer( account_name from, account_name to, asset quantity, string memo )
-{
-  do_transfer(from,to,quantity,memo,true);
-}
-
-void token::transferfree( account_name from, account_name to, asset quantity, string memo )
-{
-  do_transfer(from,to,quantity,memo,false);
-}
-
-void token::do_issue( account_name to, asset quantity, string memo, bool pay_ram = true )
-{
-    auto sym = quantity.symbol;
-    eosio_assert( sym.is_valid(), "invalid symbol name" );
-    eosio_assert( memo.size() <= 256, "memo has more than 256 bytes" );
-
-    auto sym_name = sym.name();
-    stats statstable( _self, sym_name );
-    auto existing = statstable.find( sym_name );
-    eosio_assert( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
-    const auto& st = *existing;
-
-    require_auth( st.issuer );
-    eosio_assert( quantity.is_valid(), "invalid quantity" );
-    eosio_assert( quantity.amount >= 0, "must issue positive quantity or zero" );
-
-    eosio_assert( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-    eosio_assert( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
-
-    statstable.modify( st, 0, [&]( auto& s ) {
-       s.supply += quantity;
-    });
-
-    add_balance( st.issuer, quantity, st.issuer );
-
-    if( to != st.issuer ) {
-      if(pay_ram == true) {
-        SEND_INLINE_ACTION( *this, transfer, {st.issuer,N(active)}, {st.issuer, to, quantity, memo} );
-      } else {
-        SEND_INLINE_ACTION( *this, transferfree, {st.issuer,N(active)}, {st.issuer, to, quantity, memo} );
-      }
+        statstable.emplace( _self, [&]( auto& s ) 
+        {
+            s.supply.symbol = maximum_supply.symbol;
+            s.max_supply    = maximum_supply;
+            s.issuer        = issuer;
+        });
     }
-}
 
-void token::do_transfer( account_name from, account_name to, asset quantity, string memo, bool pay_ram = true )
-{
-  eosio_assert( from != to, "cannot transfer to self" );
-  require_auth( from );
-  eosio_assert( is_account( to ), "to account does not exist");
-  auto sym = quantity.symbol.name();
-  stats statstable( _self, sym );
-  const auto& st = statstable.get( sym );
+    void token::issue( name to, asset quantity, string memo )
+    {
+        do_issue( to, quantity, memo, true );
+    }
 
-  require_recipient( from );
-  require_recipient( to );
+    void token::issuefree( name to, asset quantity, string memo )
+    {
+        do_issue( to, quantity, memo, false );
+    }
 
-  eosio_assert( quantity.is_valid(), "invalid quantity" );
-  eosio_assert( quantity.amount > 0, "must transfer positive quantity" );
-  eosio_assert( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-  eosio_assert( memo.size() <= 256, "memo has more than 256 bytes" );
+    void token::burn( name from, asset quantity, string memo )
+    {
+        auto sym = quantity.symbol;
+        check( sym.is_valid(),     "Invalid symbol name"                   );
+        check( memo.size() <= 256, "Memo must be less than 256 characters" );
 
+        auto sym_code_raw = sym.code().raw();
 
-  sub_balance( from, quantity );
-  add_balance( to, quantity, from, pay_ram );
-}
+        stats statstable( _self, sym_code_raw );
+        auto existing = statstable.find( sym_code_raw );
+        check( existing != statstable.end(), "Token with that symbol name does not exist - Please create the token before burning" );
 
-void token::sub_balance( account_name owner, asset value ) {
-   accounts from_acnts( _self, owner );
+        const auto& st = *existing;
 
-   const auto& from = from_acnts.get( value.symbol.name(), "no balance object found" );
-   eosio_assert( from.balance.amount >= value.amount, "overdrawn balance" );
+        require_auth( from );
+        require_recipient( from );
+        check( quantity.is_valid(), "Invalid quantity value" );
+        check( quantity.amount > 0, "Quantity value must be positive" );
 
+        check( st.supply.symbol == quantity.symbol, "Symbol precision mismatch" );
+        check( st.supply.amount >= quantity.amount, "Quantity value cannot exceed the available supply" );
 
-   if( from.balance.amount == value.amount ) {
-      from_acnts.erase( from );
-   } else {
-      from_acnts.modify( from, owner, [&]( auto& a ) {
-          a.balance -= value;
-      });
-   }
-}
+        statstable.modify( st, same_payer, [&]( auto& s ) 
+        {
+            s.supply -= quantity;
+        });
 
-void token::add_balance( account_name owner, asset value, account_name ram_payer, bool pay_ram = true)
-{
-   accounts to_acnts( _self, owner );
-   auto to = to_acnts.find( value.symbol.name() );
-   if( to == to_acnts.end() ) {
-      eosio_assert(pay_ram == true, "destination account does not have balance");
-      to_acnts.emplace( ram_payer, [&]( auto& a ){
-        a.balance = value;
-      });
-   } else {
-      to_acnts.modify( to, 0, [&]( auto& a ) {
-        a.balance += value;
-      });
-   }
-}
+        sub_balance( from, quantity );
+    }
 
-} /// namespace eosio
+    void token::signup( name owner, asset quantity )
+    {
+        auto sym = quantity.symbol;
+        check( sym.is_valid(), "Invalid symbol name" );
 
-EOSIO_ABI( eosio::token, (create)(issue)(issuefree)(burn)(signup)(transfer)(transferfree) )
+        auto sym_code_raw = sym.code().raw();
+
+        stats statstable( _self, sym_code_raw );
+        auto existing = statstable.find( sym_code_raw );
+        check( existing != statstable.end(), "Token with that symbol name does not exist - Please create the token before issuing" );
+
+        const auto& st = *existing;
+
+        require_auth( owner );
+        require_recipient( owner );
+
+        accounts to_acnts( _self, owner.value );
+        auto to = to_acnts.find( sym_code_raw );
+        check( to == to_acnts.end(), "You have already signed up" );
+
+        check( quantity.is_valid(), "Invalid quantity value" );
+        check( quantity.amount == 0, "Quantity exceeds signup allowance" );
+        check( st.supply.symbol == quantity.symbol, "Symbol precision mismatch" );
+        check( st.max_supply.amount - st.supply.amount >= quantity.amount, "Quantity value cannot exceed the available supply" );
+
+        statstable.modify( st, same_payer, [&]( auto& s ) {
+            s.supply += quantity;
+        });
+
+        add_balance( owner, quantity, owner );
+    }
+
+    void token::transfer( name from, name to, asset quantity, string memo )
+    {
+    do_transfer( from, to, quantity, memo, true );
+    }
+
+    void token::transferfree( name from, name to, asset quantity, string memo )
+    {
+    do_transfer( from, to, quantity, memo, false );
+    }
+
+    void token::do_issue( name to, asset quantity, string memo, bool pay_ram )
+    {
+        auto sym = quantity.symbol;
+        check( sym.is_valid(),     "Invalid symbol name"                   );
+        check( memo.size() <= 256, "Memo must be less than 256 characters" );
+ 
+        auto sym_code_raw = sym.code().raw();
+
+        stats statstable( _self, sym_code_raw );
+        auto existing = statstable.find( sym_code_raw );
+        check( existing != statstable.end(), "Token with that symbol name does not exist - Please create the token before issuing" );
+
+        const auto& st = *existing;
+
+        require_auth( st.issuer );
+        check( quantity.is_valid(), "Invalid quantity value" );
+        check( quantity.amount > 0, "Quantity value must be positive" );
+
+        check( st.supply.symbol == quantity.symbol, "Symbol precision mismatch" );
+        check( st.max_supply.amount - st.supply.amount >= quantity.amount, "Quantity value cannot exceed the available supply" );
+
+        statstable.modify( st, same_payer, [&]( auto& s ) 
+        {
+            s.supply += quantity;
+        });
+
+        add_balance( st.issuer, quantity, st.issuer );
+
+        if (to != st.issuer) {
+            if (pay_ram == true) {
+                SEND_INLINE_ACTION( *this, transfer, { st.issuer, name("active") }, { st.issuer, to, quantity, memo } );
+            } else {
+                SEND_INLINE_ACTION( *this, transferfree, { st.issuer, name("active") }, { st.issuer, to, quantity, memo } );
+            }
+        }
+    }
+
+    void token::do_transfer( name from, name to, asset quantity, string memo, bool pay_ram )
+    {
+        require_auth( from );
+
+        check( from != to,       "Cannot transfer to self"   );
+        check( is_account( to ), "to Account does not exist" );
+
+        auto sym = quantity.symbol;
+
+        stats statstable( _self, sym.code().raw() );
+        const auto& st = statstable.get( sym.code().raw(), "Token with that symbol name does not exist - Please create the token before transferring" );        
+
+        require_recipient( from );
+        require_recipient( to );
+
+        check( quantity.is_valid(), "Invalid quantity value"          );
+        check( quantity.amount > 0, "Quantity value must be positive" );
+
+        check( st.supply.symbol == quantity.symbol, "Symbol precision mismatch"             );
+        check( memo.size() <= 256,                  "Memo must be less than 256 characters" );
+
+        sub_balance( from, quantity );
+        add_balance( to, quantity, from, pay_ram );
+    }
+
+    void token::sub_balance( name owner, asset value ) 
+    {
+        accounts from_acnts( _self, owner.value );
+        auto sym  = value.symbol;
+        auto from = from_acnts.find( sym.code().raw() );
+        check( from != from_acnts.end(), "No balance object found under the token balance owner's account" );
+
+        const auto& from_iter = *from;
+        check( from_iter.balance.amount >= value.amount, "Overdrawn balance will result in a nonexistent negative balance of the account" );
+
+        if ( from_iter.balance.amount == value.amount ) {
+            from_acnts.erase( from_iter );
+        } else {
+            from_acnts.modify( from_iter, owner, [&]( auto& a ) 
+            {
+                a.balance -= value;
+            });
+        }
+    }
+
+    void token::add_balance( name owner, asset value, name ram_payer, bool pay_ram )
+    {
+        accounts to_acnts( _self, owner.value );        
+        auto to = to_acnts.find( value.symbol.code().raw() );
+
+        if ( to == to_acnts.end() ) {
+            check( pay_ram == true, "Destination account does not have balance" );
+            to_acnts.emplace( ram_payer, [&]( auto& a ) 
+            {
+                a.balance = value;
+            });
+        } else {
+            to_acnts.modify( to, same_payer, [&]( auto& a ) 
+            {
+                a.balance += value;
+            });
+        } 
+    }
+
+} // namespace genereos
+
+EOSIO_DISPATCH( genereos::token, (create)(issue)(issuefree)(burn)(signup)(transfer)(transferfree) )
